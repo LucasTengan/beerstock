@@ -14,12 +14,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatchers;
-import org.mockito.BDDMockito;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -115,5 +114,49 @@ class BeerServiceTest {
 
         // then
         assertThrows(BeerNotFoundException.class, () -> beerService.findByName(givenBeerDTO.getName()));
+    }
+
+    @Test
+    void whenListBeerIsCalledThenReturnAListOfBeers() {
+        // given
+        BeerDTO givenBeerDTO = BeerBuilder.builder().build().toBeerDTO();
+        Beer givenBeer = beerMapper.toModel(givenBeerDTO);
+
+        // when
+        BDDMockito.when(beerRepositoryMock.findAll()).thenReturn(Collections.singletonList(givenBeer));
+
+        // then
+        List<BeerDTO> foundBeerDTO = beerService.listAll();
+
+        Assertions.assertThat(foundBeerDTO).isNotEmpty();
+        Assertions.assertThat(foundBeerDTO.get(0)).isEqualTo(givenBeerDTO);
+
+    }
+
+    @Test
+    void whenListBeerIsCalledThenReturnAnEmptyList() {
+        // when
+        BDDMockito.when(beerRepositoryMock.findAll()).thenReturn(Collections.EMPTY_LIST);
+
+        // then
+        List<BeerDTO> foundBeerDTO = beerService.listAll();
+
+        Assertions.assertThat(foundBeerDTO).isEmpty();
+    }
+
+    @Test
+    void whenExclusionIsCalledWithValidIdThenABeerShouldBeDeleted() throws BeerNotFoundException {
+        // given
+        BeerDTO givenBeerDTO = BeerBuilder.builder().build().toBeerDTO();
+        Beer givenBeer = beerMapper.toModel(givenBeerDTO);
+
+        // when
+        BDDMockito.when(beerRepositoryMock.findById(givenBeerDTO.getId())).thenReturn(Optional.of(givenBeer));
+        BDDMockito.doNothing().when(beerRepositoryMock).deleteById(givenBeerDTO.getId());
+        // then
+        beerService.deleteById(givenBeerDTO.getId());
+
+        BDDMockito.verify(beerRepositoryMock, Mockito.times(1)).findById(givenBeer.getId());
+        BDDMockito.verify(beerRepositoryMock, Mockito.times(1)).deleteById(givenBeer.getId());
     }
 }

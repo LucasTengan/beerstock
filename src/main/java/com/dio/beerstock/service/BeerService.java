@@ -80,4 +80,5 @@ public class BeerService {
             throw new BeerAlreadyRegisteredException(name);
         }
     }
+
 }

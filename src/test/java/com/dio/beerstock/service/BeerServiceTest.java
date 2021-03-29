@@ -4,6 +4,7 @@ import com.dio.beerstock.DTO.BeerDTO;
 import com.dio.beerstock.builder.BeerBuilder;
 import com.dio.beerstock.entity.Beer;
 import com.dio.beerstock.exception.BeerAlreadyRegisteredException;
+import com.dio.beerstock.exception.BeerNotFoundException;
 import com.dio.beerstock.mapper.BeerMapper;
 import com.dio.beerstock.repository.BeerRepository;
 import org.assertj.core.api.Assertions;
@@ -74,7 +75,7 @@ class BeerServiceTest {
     }
 
     @Test
-    void whenAlreadyRegisteredBeerInformedThenExceptionShouldBeThrown() throws BeerAlreadyRegisteredException {
+    void whenAlreadyRegisteredBeerInformedThenExceptionShouldBeThrown() {
         // given
         BeerDTO givenBeer = BeerBuilder.builder().build().toBeerDTO();
         Beer duplicatedBeer = beerMapper.toModel(givenBeer);
@@ -85,5 +86,34 @@ class BeerServiceTest {
 
         // then
         assertThrows(BeerAlreadyRegisteredException.class, () -> beerService.createBeer(givenBeer));
+    }
+
+    @Test
+    void whenValidBeerNameIsGivenThenReturnABeer() throws BeerNotFoundException {
+        // given
+        BeerDTO givenBeerDTO = BeerBuilder.builder().build().toBeerDTO();
+        Beer givenBeer = beerMapper.toModel(givenBeerDTO);
+        
+        // when
+        BDDMockito.when(beerRepositoryMock.findByName(givenBeer.getName()))
+                .thenReturn(Optional.of(givenBeer));
+        
+        // then
+        BeerDTO foundBeerDTO = beerService.findByName(givenBeerDTO.getName());
+
+        Assertions.assertThat(foundBeerDTO).isEqualTo(givenBeerDTO);
+    }
+
+    @Test
+    void whenNotRegisteredBeerNameIsGivenThenThrownAnException() {
+        // given
+        BeerDTO givenBeerDTO = BeerBuilder.builder().build().toBeerDTO();
+
+        // when
+        BDDMockito.when(beerRepositoryMock.findByName(givenBeerDTO.getName()))
+                .thenReturn(Optional.empty());
+
+        // then
+        assertThrows(BeerNotFoundException.class, () -> beerService.findByName(givenBeerDTO.getName()));
     }
 }
